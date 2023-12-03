@@ -37,15 +37,42 @@ struct Bag {
     contents: HashMap<Color, u32>,
 }
 
+impl Default for Bag {
+    fn default() -> Self {
+        Self {
+            contents: HashMap::from_iter([(Color::Red, 0), (Color::Green, 0), (Color::Blue, 0)]),
+        }
+    }
+}
+
 fn game_is_possible(bag: &Bag, game: &Game) -> bool {
     for turn in game.turns.iter() {
         for cq in turn {
             if bag.contents.get(&cq.0).expect("missing color") < &cq.1 {
-                return false
+                return false;
             }
         }
     }
     true
+}
+
+impl Bag {
+    fn power(&self) -> u32 {
+        self.contents.values().product()
+    }
+}
+
+fn minimum_bag(game: &Game) -> Bag {
+    let mut bag = Bag::default();
+    for turn in game.turns.iter() {
+        for cq in turn {
+            let slot = bag.contents.get_mut(&cq.0).expect("missing color");
+            if *slot < cq.1 {
+                *slot = cq.1;
+            }
+        }
+    }
+    bag
 }
 
 fn main() -> Result<()> {
@@ -72,15 +99,23 @@ fn main() -> Result<()> {
                         .collect()
                 })
                 .collect();
-            Ok(Game { game_id: number, turns })
+            Ok(Game {
+                game_id: number,
+                turns,
+            })
         })
         .collect::<Result<_>>()?;
     let p1bag = Bag {
         contents: HashMap::from_iter([(Color::Red, 12), (Color::Blue, 14), (Color::Green, 13)]),
     };
-    let possible_num_total: u32 = games.iter().filter_map(|game|
-        game_is_possible(&p1bag, game).then_some(game.game_id)
-    ).sum();
+    let possible_num_total: u32 = games
+        .iter()
+        .filter_map(|game| game_is_possible(&p1bag, game).then_some(game.game_id))
+        .sum();
+    eprintln!("part1");
     dbg!(possible_num_total);
+    eprintln!("part2");
+    let min_power_total: u32 = games.iter().map(minimum_bag).map(|bag| bag.power()).sum();
+    dbg!(min_power_total);
     Ok(())
 }
