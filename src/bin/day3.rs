@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 struct Cell {
@@ -104,7 +104,7 @@ fn main() -> Result<()> {
         .collect();
 
     let part_numbers: Vec<u32> = numbers
-        .into_iter()
+        .iter()
         .filter(|object| {
             let all_adjacents: HashSet<Cell> =
                 HashSet::from_iter(object.locations.iter().flat_map(Cell::adjacents));
@@ -118,5 +118,32 @@ fn main() -> Result<()> {
     let pnsum: u32 = part_numbers.iter().sum();
     dbg!(pnsum);
 
+    let gear_groups: HashMap<usize, Vec<u32>> =
+        numbers.iter().fold(HashMap::new(), |mut gmap, pn| {
+            let all_adjacents: HashSet<Cell> =
+                HashSet::from_iter(pn.locations.iter().flat_map(Cell::adjacents));
+            let adjacent_sybols: Vec<usize> = symbols
+                .iter()
+                .enumerate()
+                .filter_map(|(i, obj)| {
+                    obj.locations
+                        .iter()
+                        .any(|loc| all_adjacents.contains(loc))
+                        .then_some(i)
+                })
+                .collect();
+            for s in adjacent_sybols {
+                gmap.entry(s)
+                    .or_default()
+                    .push(pn.chars.parse::<u32>().unwrap());
+            }
+            gmap
+        });
+    let gratio: u32 = gear_groups
+        .values()
+        .filter(|gg| gg.len() == 2)
+        .map(|gg| gg.iter().product::<u32>())
+        .sum();
+    dbg!(gratio);
     Ok(())
 }
